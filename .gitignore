@@ -1,0 +1,17 @@
+AGENTS.md
+.agents/
+__pycache__/
+*.pyc
+build/
+dist/
+.venv/
+.venv-web/
+var/
+.env
+.env.*
+CODEX_HANDOFF.md
+PROJECT_RULES.md
+docs/my-pm-reference/
+# Local QA screenshots and machine-specific execution reports
+docs/*.png
+docs/*.json
