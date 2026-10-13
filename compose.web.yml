@@ -1,0 +1,31 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    # Linux host networking lets Waitress stay on loopback; no public port mapping.
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      NEWS_ORIGIN: ${NEWS_ORIGIN:?Set the approved HTTPS origin}
+      NEWS_DATA_ROOT: /data
+    volumes:
+      - news-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 1.0
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request,os; r=urllib.request.Request('http://127.0.0.1:4310/healthz',headers={'Host':os.environ['NEWS_ORIGIN'].split('//',1)[1]}); urllib.request.urlopen(r,timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: '3'
+volumes:
+  news-data:

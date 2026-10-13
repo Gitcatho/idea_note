@@ -1,0 +1,57 @@
+# News_idea
+
+로그인 웹앱을 라즈베리파이에 배포하고 [공개 HTTPS](https://pi-home.tail5eceb8.ts.net:8443/)를 검증했습니다. 개인 관리자 로그인, 모바일 화면, 인증된 데이터·백업 API를 제공합니다. 관리자 비밀번호를 사용자가 직접 설정하기 전에는 모든 로그인이 차단됩니다. 기존 데이터는 자동 이전하지 않습니다. 웹 실행·비밀번호 설정·백업·배포 및 복구 절차는 [docs/WEB_DEPLOYMENT.md](docs/WEB_DEPLOYMENT.md)를 확인하세요. 아래 macOS 앱 사용법은 기존 앱에 대한 설명입니다.
+
+AI/AX 채용과 지원 기업, 이력서 메모, 공모전, 학습기록을 위한 한국어 macOS 로컬 앱입니다.
+
+## 실행
+
+`dist/News_idea.app`을 더블클릭하세요. 또는 `dist/News_idea-1.0.0-arm64.dmg`을 열고 앱을 Applications로 드래그해 설치하세요. Python이나 My_PM 실행이 필요하지 않습니다. 앱을 원하는 폴더로 복사해도 데이터는 유지됩니다. Apple Silicon Mac용 1.0.0 로컬 빌드이며 개발자 계정 서명·공증·외부 배포는 하지 않았습니다. 시스템 보안 설정은 변경하지 않았습니다.
+
+## 사용
+
+- 채용 캘린더: 마감일과 여러 추가 일정을 월별 표시. 상시/미확인 날짜 별도 목록. KST 기준.
+- 지원 기업: 탐색, 지원 예정, 지원 완료, 면접, 보류, 종료 상태와 준비 메모.
+- 이력서·메모: 공통 내용, 기억할 것, 확정 항목. 외부 서버 전송 없음.
+- AI 공모전: 자격, 복수 마감, 혜택/전형, 메모와 출처 확인 시각.
+- AI 스킬·정보: 읽을 것, 학습 중, 실습 완료, 보관과 자료 링크.
+- 각 탭에 추가/편집/검색/상태 필터, 상세 보기. 휴지통에서 삭제 복구.
+- 추가 일정은 `2026-11-12 10:00 | 기획서 제출` 형식. 원문 시간대가 명시되지 않았으면 메모에 추정 여부를 기록하세요.
+- 공식 출처를 브라우저로 열어 확인하고 수동 등록. 편집창의 원문 확인 체크가 확인 시각을 갱신합니다.
+- ⌘N 새 항목, ⌘F 검색, Tab 이동, Esc 닫기. 편집 취소는 미저장 변경 확인.
+
+## 저장과 백업
+
+기본 데이터: `~/Library/Application Support/News_idea/news-idea.sqlite3`
+앱 시작 때 `backups/`에 JSON 자동 백업. 백업·도움말에서 즉시 백업, 원하는 파일로 내보내기, JSON 가져오기. 가져오기는 ID 중복을 건너뛰고 새 항목만 추가하며 기존 내용은 덮어쓰지 않습니다. 가져오기 전에 자동 백업합니다. 휴지통은 영구 삭제하지 않습니다. 백업에는 개인 메모가 포함됩니다. 디스크 용량에 맞춰 오래된 백업은 사용자가 직접 정리하세요.
+
+## 제공 데이터와 범위
+
+개발 시 공식 출처 검토로 전달된 2026-10-13 00:07 KST 기준 개인용 북마크 4개를 최초 실행에만 등록합니다. NAVER AI Security와 DAKER/DACON 공모전은 자격·시각·모집 여부를 원문에서 재확인해야 합니다. 실제 지원 가능 여부를 보장하지 않습니다. 시간대 미명시 공모전은 KST 추정임을 메모에 표시합니다. 시각 미입력 마감은 계산상 23:59이며 실제 마감 시각이 아닙니다.
+
+고용24/사람인 API는 기업 심사·승인 키가 필요하여 연결하지 않았습니다. DACON/DAKER 동의 없는 본문 수집·복제를 하지 않습니다. 공식 탐색 링크와 짧은 사실 메타정보만 제공하며 자동 크롤러, 실시간 모집 검증, 로그인 수집, 자동 지원, 메시지 발송은 없습니다. 불러오기는 로컬 기록 재조회입니다. 외부 페이지를 열 때만 운영체제 기본 브라우저에 URL을 전달합니다. 개인 메모는 전달하지 않습니다.
+
+## 개발 / 검증
+
+Python 3.13 + pywebview 6.2.1, SQLite, HTML/CSS/JavaScript, PyInstaller 6.x. My_PM의 기존 설치 도구를 읽기 재사용했으며 원본 소스/데이터는 변경하지 않았습니다.
+
+```sh
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements-desktop.txt
+PYTHONPATH=. .venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python desktop.py
+.venv/bin/python build.py
+node --check static/app.js
+```
+
+브라우저 UI 테스트는 `PLAYWRIGHT_MODULE`을 설치한 Playwright 모듈 경로로 설정 후 `node tests/browser-tests.cjs` 실행. 앱 실행/네이티브 QA는 Mac 로그인 데스크톱에서 실행해야 합니다.
+
+```sh
+dist/News_idea.app/Contents/MacOS/News_idea --data-root /tmp/news-idea-qa --smoke /tmp/news-idea-qa.json
+```
+
+## 프로젝트 규칙
+
+저장소는 [Gitcatho/idea_note](https://github.com/Gitcatho/idea_note), 기본 브랜치는 `main`입니다. 공식 작업은 GitHub Issues, 요약은 LIST.md로 관리합니다. 이후 개발은 이슈별 브랜치와 PR로 진행합니다. 기능 이력과 검증 결과는 CHANGELOG 및 docs/QA.md에 기록합니다. 서버 배포·공개 설정 변경은 소스 push와 별도 작업입니다.
+
+로컬 `AGENTS.md`와 AI 지침·설정·참고 사본은 Git에서 제외합니다. 개인 SQLite DB·JSON 백업·비밀 설정·가상환경·앱/DMG 빌드 산출물·환경별 QA 이미지/실행 결과도 저장소에 포함하지 않습니다. Git clone에는 실행파일과 개인 데이터가 없으므로 실행 환경과 비밀번호를 별도로 설정해야 합니다. 기존 My_PM 원본과 개인 데이터는 변경하지 않습니다.

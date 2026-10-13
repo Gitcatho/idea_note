@@ -1,0 +1,9 @@
+# GitHub 작업 요약
+
+대상 저장소: [Gitcatho/idea_note](https://github.com/Gitcatho/idea_note). GitHub Issues가 작업의 공식 원본입니다.
+
+| 이슈 | URL | 제목 | 담당자 | 원격 상태 | 마지막 확인 |
+|---|---|---|---|---|---|
+| Gitcatho/idea_note#1 | https://github.com/Gitcatho/idea_note/issues/1 | 기존 News_idea 구현 최초 등록 | Gitcatho | OPEN | 2026-10-14 KST |
+
+로컬 구현·검증: docs/QA.md 및 CHANGELOG 참조. 최초 .gitignore 커밋 ff77562는 원격 main 반영 확인. 소스 등록 검증 결과는 해당 이슈에 기록합니다. 원본 참고 사본은 로컬에만 보존합니다.

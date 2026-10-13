@@ -1,0 +1,14 @@
+.git
+.agents
+AGENTS.md
+.venv
+build
+dist
+var
+.env
+.env.*
+docs
+__pycache__
+*.sqlite3
+*.sqlite3-*
+*.json

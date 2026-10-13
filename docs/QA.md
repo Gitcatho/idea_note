@@ -1,0 +1,96 @@
+# News_idea 1.0.0 검증
+
+## 자동 백업·부팅 설정 점검 (2026-10-13 23:13 KST)
+
+- 서버 재부팅·컨테이너 재시작 없이 읽기 전용 점검. docker/tailscaled enabled·active, News_idea healthy·unless-stopped·영속 볼륨 및 로그5MB×3 확인.
+- 실행 중 컨테이너 코드에 시작 백업·데몬 스레드86400초 주기 확인. 현재 시작23:04 KST, 다음 정기 백업은10월14일23:04경(재시작 없을 때). 고정 일일 시각이 아니며24시간 실제 경과 실행은 미검증.
+- 유효JSON백업6개,손상0개,최신23:09:50 KST의4개 기록. 최근500줄에정기백업실패0건. 디스크206GB가용·9%사용,inode4%사용 확인.
+- 운영 기록4개·세션1개 전체 결과의 점검 전후 해시 일치, 기존서비스와443/8443 Funnel 설정 동일. 백업 추가·삭제·설정 변경 없음.
+- 상세 운영 절차 OPERATIONS.md, 증거 server-operations-status.json. 실패 직후 재시도·성공로그·백업 전용상태/알림·백업자동정리는 현재 없음.
+
+## 운영 기록 백업·임시 저장소 복구 (2026-10-13 KST)
+
+- 사용자 요청으로 운영4개 기록을 JSON backup-20261013-230950-195693.json에 백업. 기존 백업 보존. 별도 TemporaryDirectory(SQLite)에서4개 복구,모든 ID·검증된 내용 필드·일정·삭제 상태 일치 확인.
+- 임시 저장소 다시 열기 후4개 유지,같은 백업 재가져오기0개 추가,SQLite integrity_check=ok. auth.sqlite3를 복사하지 않았으며 테스트 후 임시 저장소 제거.
+- 운영 기록 전체 결과와 기존 세션 토큰·CSRF·만료값 전체 결과가 테스트 전후 동일함을 메모리 내 비교. 세션 실제 값·개인 내용 출력 없음. 컨테이너 중지·재시작·배포 없음.
+- 기존 서비스 컨테이너 ID·이미지·실행 상태,443 및8443 Funnel 설정이 기존 보존 기준과 일치함을 확인.
+- 서버 데이터 볼륨 백업과 별도로 Mac의 Git 제외 var/migrations/20261013-224359/web-backup-20261013-230950.json에 사본 저장. 양쪽 SHA256 일치,4개 기록 확인. JSON 가져오기 규칙대로 복구 항목의 updated 시각은 복구 시각으로 설정됨.
+
+## 이전 후 운영 컨테이너 재시작 (2026-10-13 KST)
+
+- 사용자 요청으로 news-idea-web-1만 docker restart 수행. 전체 서버·다른 컨테이너·Tailscale 설정은 변경하지 않음.
+- 재시작 전후4개 기록의 ID·payload·삭제 상태·updated를 포함한 전체 정렬 결과 해시 일치. 세션1개의 저장 토큰·CSRF·만료값 전체 결과 해시 일치. 실제 값은 출력/문서에 저장하지 않음.
+- 기존 로그인된 HTTPS 브라우저를 재로드해 비밀번호 재입력 없이 채용1개·공모전3개 표시 확인. 캐시 화면뿐 아니라 인증된 실제 서버 재조회 성공.
+- 기존 서비스의 컨테이너 ID·이미지·실행 상태 유지,443 및8443 Funnel 전체 설정 일치 확인. 증거 server-restart-qa.json. 사용자 화면 증거는 Git 제외 개인 백업 폴더에 저장.
+
+## 실제 데스크톱 데이터 이전 (2026-10-13 KST)
+
+- 사용자 명시적 요청 후 News_idea 원본 SQLite를 mode=ro로 열고 SQLite backup API로 일관된 사본 생성. 사본 integrity_check=ok, v1 JSON export 생성. 개인 백업은 Git 제외 var/migrations/20261013-224359/에 저장.
+- 원본4개(삭제0개), 웹 기존0개, ID충돌0개. SSH 암호화 전송 후 JSON SHA256 일치 확인. 서버 가져오기 전·후 JSON 백업 생성, 기존 Store.merge 추가형 가져오기로4개 추가.
+- 전체 ID·검증된 모든 내용 필드·복수 일정·기한·삭제 상태 일치 확인. 기존 웹 기록 보존 확인. 가져오기 updated 시각은 기존 가져오기 규칙대로 이전 시각을 사용하며 원본 사본은 원래 시각을 보존.
+- 사용자가 로그인한 실제 HTTPS 탭에서 새로고침해 채용1개·공모전3개 및 복수 일정 표시 확인. 별도 비밀번호 입력·세션 추출 없이 검증.
+- 원본 DB, 기존 앱 실행파일과 DMG 해시 보존 확인. 원본 백업 폴더 변경·삭제 없음. 개인정보와 실제 내보내기 파일·스크린샷은 Git에 넣지 않음. 개인 백업 폴더의 manifest.json과 web-import-confirmed.jpg에 증거 보존.
+
+## 라즈베리파이 배포·공개 검증 (2026-10-13 KST)
+
+- 후속 사용자 요청으로 관리자 비밀번호 최소 길이를10자로 변경하고 서버에 재배포. 9자 거부·10자 허용 회귀 검증 포함 Python16개 통과. 사용자가 채팅에 제시한 실제 비밀번호는 코드·도구 인수·로그·Git·운영 DB에 넣지 않음. 실제 설정은 사용자의 숨김 입력 단계로 유지.
+
+- 사용자 승인 후 ARM64 이미지 빌드·신규 News_idea 컨테이너·볼륨 배포 완료. 기존 컨테이너 ID/이미지와443 Funnel 설정을 사전 사본과 비교하여 일치 확인.
+- 서버 이미지 Python15개 통과. 실제 내부 HTTP8개 통과: 전체 데이터 API 미인증 차단, HTTPS 쿠키 속성, CSRF/Origin, DB·백업 파일 경로 차단,5개 종류 CRUD/삭제 복구,내보내기·가져오기·백업,프로세스 종료 후 Docker 자동 재시작과 기록/세션 영속,로그아웃 쿠키 재사용 거부.
+- 8443 Funnel의 실제 HTTPS API7개 통과. 공개 DNS103.84.155.153 릴레이로 Chromium을 직접 연결하여 모바일 로그인·5개 탭·생성/편집/검색/삭제 복구·백업 다운로드·KST·로그아웃 등6개 통과. 인증서 검증을 비활성화하지 않음. MagicDNS/100.x 내부 경로와 구분된 공개 릴레이 경로 시험이며 실제 셀룰러 시험은 아님.
+- 운영 컨테이너로 전환한 공개 HTTPS에서 로그인 화면200, 데이터 API8종401,DB/백업/앱자산 접근 로그인 리다이렉트,healthz200 확인. 운영 저장소 기록0·관리자0·세션0·시작백업1. 기본 비밀번호 없음,직접 비밀번호 설정 전 로그인 불가.
+- 임시 테스트 비밀번호는 프로세스 메모리와 SSH 표준입력에서만 사용. QA 컨테이너·QA 볼륨 제거. 사용자 운영 비밀번호는 설정/열람하지 않음. 기존 데스크톱 저장소 열람·이전 없음.
+- Waitress127.0.0.1:4310만 리스닝. Docker healthy,읽기전용 루트,CPU1개,로그5MB×3,unless-stopped 확인. docker/tailscaled 부팅enabled,Funnel백그라운드 설정 확인. 전체 서버 재부팅은 기존 서비스 보존을 위해 미실행.
+- 서버 memory cgroup 미지원으로 Linux 앱 프로세스 주소 공간512MiB 상한을 적용하고 /proc/1/limits 확인. 컨테이너 전체 RAM 상한은 아님. 커널·기존 서비스 설정 변경 없음.
+- 최초 Docker 빌드는 Debian 기본news 사용자와 충돌하여 newsidea로 수정. 저장소 테스트의 seeds 모듈을 이미지에 포함해 해결. Docker 수동kill은 재시작을 억제하므로 앱SIGTERM 종료 후 자동 재시작 방식으로 검증.
+- 증거: server-deployment-status.json,server-https-qa.json,web-public-browser-qa.json,web-production-public-qa.json,web-public-mobile-qa.png,web-public-login.png. 운영·비밀번호 설정·복구는 WEB_DEPLOYMENT.md 참조.
+- 미검증: 사용자 설정 운영 비밀번호 로그인,데스크톱 실제 데이터 이전,24시간 타이머의 실제 경과,휴대폰 셀룰러 접속,서버 전체 재부팅. 아래 로컬 단계의 승인 대기 기록은 당시 상태이며 위 결과로 갱신됨.
+
+## 로그인 웹 전환 검증 (2026-10-13 KST)
+
+- Python 3.13: 기존 저장소 9개 + 웹 인증/API 테스트 6개 = 15개 통과. ResourceWarning을 오류로 처리.
+- 실제 Waitress HTTP 서버 + Chromium: 16개 검증 통과. 로그인·미인증 API 차단, 5개 탭 생성, 편집·검색·삭제 복구·XSS 문자열, KST·복수 일정, 다운로드·파일 가져오기 중복 방지·서버 백업, 프로세스 종료/재실행 후 데이터·세션 유지, 로그아웃 후 과거 쿠키 무효화.
+- HTTPS 설정 테스트에서 Secure/HttpOnly/SameSite, CSRF·Origin·Host 검사, 비밀번호 변경·만료 후 세션 거부, 재시작 후 로그인 시도 제한 유지, 파일 경로 노출 차단, 20MB 제한 검증.
+- 모바일 390px·320px 가로 넘침 없음. web-mobile-qa.png 시각 확인. web-desktop-qa.png, web-browser-qa.json에 별도 증거 저장. 이전 네이티브 증거는 보존.
+- 모든 테스트는 합성 데이터와 임시 저장소 사용. 기존 사용자 DB·백업을 읽거나 변경하지 않음. 기존 앱·DMG 재빌드 없음.
+- 최초 시스템 Python 3.9에서 scrypt 부재로 웹 테스트 실패; 문서와 같은 Python 3.13 별도 .venv-web 환경에서 해결. 웹 서버/Chromium 샌드박스 실행 제한은 승인된 로컬 실행으로 해결.
+- 서버 SSH 환경 조회만 수행. 실제 Docker ARM64 빌드·서버 배포·재부팅·Funnel8443 활성화·HTTPS 및 외부 셀룰러 접속·실제 데이터 이전은 미검증/미실행. 기존443 Funnel 라우팅 변경 없음. 서버의 Compose 읽기 전용 config --quiet 검증 통과, docker/tailscaled 부팅 자동 시작 enabled 확인.
+- 운영 절차와 제한은 WEB_DEPLOYMENT.md 참조. 기존 네이티브 검증은 아래 기록 유지.
+
+검증 환경: macOS Apple Silicon, Python 3.13, pywebview 6.2.1, PyInstaller 6.22.2. 2026-10-13 KST 로컬 개발. 원본 My_PM 소스는 수정하지 않았으며 AGENTS.md SHA-256은 원본과 동일합니다.
+
+## 통과
+
+- Python 저장소 테스트 9개: 5개 종류 CRUD, 재시작 영속, 휴지통·복구, 입력 검증, 상시 날짜 초기화, 전체 입력 검증 후 원자적 가져오기, 중복 ID 스킵, JSON 백업 라운드트립, 삭제된 항목 편집 방지, 브리지 오류 응답, 공식 북마크 중복 방지/복수 일정.
+- ResourceWarning을 오류로 처리한 재실행에서도 통과. DB 연결을 명시적으로 닫도록 개선.
+- Chromium UI 테스트 14개: 5개 탭 추가, 편집/검색/삭제/복구, 편집 취소, 월 이동, 복수 일정 표시, 상태 필터, KST 날짜 경계와 상시/미확인, 반복 저장 방지, 제목 필수, 저장 오류가 대화상자에서 보이고 입력이 유지됨.
+- 외부 텍스트에 HTML 문자열을 넣어도 이미지/스크립트가 생성되지 않는 것을 확인.
+- Python 구문 컴파일 및 JavaScript `node --check` 통과. 별도의 타입 검사·린트 도구는 사용하지 않음.
+- 실제 Mac WKWebView 창에서 5개 탭 생성/저장/삭제/복구, 검색 및 월 이동 통과.
+- 최종 PyInstaller .app 직접 실행: 5개 탭과 저장소 연결, 검색, 월 이동 통과. 개발 Python 명령이 아닌 앱 내부 실행파일을 호출.
+- 동일 임시 저장소로 패키지 재시작 검증. 원래 기록 유지 및 추가 기록 저장 확인 (첫 실행 9개, 재시작 후 14개, 삭제 상태 0개).
+- 실제 기본 데이터 앱에서 네이티브 접근성 트리와 스크린샷으로 NAVER 채용 캘린더와 공모전 3개/복수 일정 표시 확인.
+- 네이티브 Save/Open 파일 선택창으로 `/tmp/News_idea-QA-backup.json` 내보내기와 재가져오기 성공. 0개 추가/중복 ID 스킵 메시지 확인 및 기존 4개 기록 유지.
+- 실제 기본 앱의 ‘지금 백업’ 버튼 클릭으로 `~/Library/Application Support/News_idea/backups/`에 JSON 백업 생성 확인.
+- DMG 설치파일 생성 및 `hdiutil verify` 검증 통과.
+- macOS `codesign --verify --deep --strict` 통과. 실행파일 Mach-O arm64 확인.
+- My_PM AGENTS.md 보존 해시: `1e98c0129a43e8161b8c915bc4bf9ee5f5e757e78775a6cc206ba90928440708`.
+- 새 프로젝트 로컬 Git 초기화 및 `git check-ignore AGENTS.md .agents/skills/ponytail/SKILL.md` 확인. 원격 저장소·커밋·푸시 없음.
+
+## 증거
+
+- `native-backup-roundtrip.png`: 실제 네이티브 내보내기/가져오기 중복 방지 성공 화면.
+- `native-app.png`: 완성 앱 네이티브 캘린더 스크린샷.
+- `browser-qa.png`, `browser-qa.json`: Chromium 회귀검증 화면과 결과 (브리지는 테스트용 메모리 저장소; 저장소 실물은 Python 및 네이티브 검증).
+- `native-source-qa.json`: 개발 소스 네이티브 실행 결과.
+- `native-package-qa.json`, `native-package-restart.json`: 최종 실행파일 검증 결과.
+
+## 제한 / 미검증
+
+- 개별 채용/공모전 자동수집 API는 구현하지 않음. 인증키나 사이트 동의 없는 자동수집/본문 복제를 하지 않음. 공식 출처 수동 등록과 원문 직접 확인 시각을 제공.
+- 실제 모집 여부·지원 자격은 원문 재확인 필요. 지원 가능 보장 아님. 공모전 원문 시간대 미명시 항목은 KST 추정 표기.
+- 기본 macOS 파일 선택창을 통한 내보내기/가져오기를 검증했으나 모든 경로·권한 오류 조합은 검증하지 않음.
+- 인터넷 오프라인에서 로컬 CRUD는 별개로 작동하며, 외부 브라우저 출처 열기는 브라우저의 네트워크 상태에 따름. 수집API가 없어 수집API 오프라인/스키마/중복 테스트는 해당 없음.
+- Intel Mac, Windows, macOS 다른 버전, VoiceOver 전문 검증은 수행하지 않음.
+- 로컬 ad-hoc 서명. Apple Developer 서명·공증·공개 배포 없음. 시스템 보안 설정 변경 없음.
+- 개발 중 샌드박스가 Mac 화면·Chromium 실행·전역 PyInstaller 캐시 접근을 제한했으나 승인된 Mac 로컬 실행과 프로젝트 내부 빌드 캐시로 해결. 미해결 자동 승인 거절 없음.

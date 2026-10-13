@@ -1,0 +1,10 @@
+FROM python:3.13-slim
+WORKDIR /app
+COPY requirements-web.txt .
+RUN pip install --no-cache-dir -r requirements-web.txt && useradd --uid 10001 --create-home newsidea
+COPY webapp.py store.py desktop.py seeds.py ./
+COPY static ./static
+RUN mkdir /data && chown newsidea:newsidea /data
+USER newsidea
+ENV NEWS_DATA_ROOT=/data PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+CMD ["python", "webapp.py"]
