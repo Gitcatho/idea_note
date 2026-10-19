@@ -85,6 +85,7 @@ def main():
     bridge = Bridge(store)
     html = (ROOT / 'static' / 'index.html').read_text(encoding='utf-8')
     html = html.replace('/*APP_CSS*/', (ROOT / 'static' / 'app.css').read_text(encoding='utf-8'))
+    html = html.replace('/*RESUME_JS*/', (ROOT / 'static' / 'resume.js').read_text(encoding='utf-8'))
     html = html.replace('/*APP_JS*/', (ROOT / 'static' / 'app.js').read_text(encoding='utf-8'))
     bridge.window = webview.create_window('News_idea · AI 커리어 워크스페이스', html=html, js_api=bridge, width=1320, height=900, min_size=(850, 620), background_color='#f5f7fb')
     if args.smoke:
