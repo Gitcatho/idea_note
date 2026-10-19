@@ -126,3 +126,17 @@ docker compose -p news-idea -f compose.web.yml stop web
 ```
 
 443 기존 라우팅이 그대로인지 전·후 비교합니다. 포트 해제 명령은 실제 Funnel 출력에서 안내받았지만 운영 공개를 유지하려고 실행하지 않았습니다. 기존 설정 사본은 서버 tailscale-before.json에 보존했습니다. Compose down을 사용할 때도 `-v`를 사용하지 않아 데이터를 보존합니다. 배포 이미지 ID는 deployment-status.json에 기록했습니다. 이전 이미지를 기록해 두고 앱만 교체하면 코드 롤백이 가능합니다. 서비스 중지·포트 공개 해제와 데이터 삭제는 별개입니다.
+
+## 세부 이력 확장 배포와 코드 복구 (2026-10-14 KST)
+
+17:55 KST News_idea 컨테이너만 업데이트했습니다. 운영4개 기록·인증 저장소·다른 서비스·443/8443 설정 보존 검증 완료. 백업은 서버 resume-detail-rollout/records-backup.json과 Mac var/deployments/resume-detail-20261014/records-backup.json에 보존하며 Git 제외입니다. 이전 이미지 news-idea-web:before-resume-detail 및 이전 소스 resume-detail-rollout/source-before.tar.gz 보존.
+
+문제 발생 시 승인된 코드 복구는 서버 프로젝트 폴더에서 아래처럼 News_idea만 수행합니다. 데이터 볼륨은 복원하거나 삭제하지 않습니다.
+
+```sh
+docker tag news-idea-web news-idea-web:resume-detail-deployed
+docker tag news-idea-web:before-resume-detail news-idea-web:latest
+docker compose -p news-idea -f compose.web.yml up -d --no-deps --no-build web
+```
+
+구버전은 새 구조화 이력 필드를 편집할 때 보존하지 못하므로 복구 중에는 세부 이력 편집을 피하고 최신 코드 복귀 후 작업합니다. JSON 사전백업을 가져오는 것만으로 기존 ID를 덮어쓰지는 않습니다. 실제 데이터 복원은 최신 백업과 원본을 보존한 별도 절차입니다. 전체 서버 재부팅과 Tailscale 변경은 하지 않습니다.

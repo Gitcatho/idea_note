@@ -159,6 +159,7 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
         html = (ROOT/'static/index.html').read_text()
         html = html.replace(html[html.index('<meta http-equiv='):html.index('<title>')], '')
         html = html.replace('<style>/*APP_CSS*/</style>', '<link rel="stylesheet" href="/assets/app.css">')
+        html = html.replace('<script>/*RESUME_JS*/</script>', '<script src="/assets/resume.js"></script>')
         html = html.replace('<script>/*APP_JS*/</script>', '<script src="/assets/web.js"></script><script src="/assets/app.js"></script>')
         html = html.replace('로컬 전용 워크스페이스', '개인 웹 워크스페이스').replace('개인 메모는 이 Mac에 저장됩니다.', '로그인한 관리자만 접근합니다.')
         html = html.replace('<button id="trashTab">', '<button id="logout">로그아웃</button><button id="trashTab">')
@@ -167,7 +168,7 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
 
     @app.get('/assets/<name>')
     def asset(name):
-        if name not in ('app.js', 'app.css', 'web.js'):
+        if name not in ('app.js', 'app.css', 'web.js', 'resume.js'):
             return '', 404
         return Response((ROOT/'static'/name).read_text(), mimetype='text/css' if name.endswith('.css') else 'text/javascript')
 

@@ -7,6 +7,7 @@ from pathlib import Path
 import sqlite3
 import threading
 import uuid
+from resume import validate_resume
 from urllib.parse import urlsplit
 
 KINDS = ('job', 'company', 'memo', 'contest', 'skill')
@@ -81,6 +82,8 @@ def validate(record):
             if not isinstance(value, str) or len(value) > limit:
                 raise ValueError(f'{field}: 입력 길이/형식을 확인하세요.')
             result[field] = value.strip()
+        if 'resumeData' in record:
+            result['resumeData'] = validate_resume(record['resumeData'])
     return result
 
 class Store:
