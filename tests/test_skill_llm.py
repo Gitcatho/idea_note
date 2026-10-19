@@ -30,6 +30,22 @@ class SkillLLMTests(unittest.TestCase):
             response.status=302;response.getheader.side_effect=lambda key,default='':'https://127.0.0.1/private' if key=='Location' else default
             with self.assertRaises(LLMError):public_excerpt(URL)
 
+    def test_dual_stack_uses_ipv4_and_stops_after_bounded_metadata(self):
+        response=Mock(status=200);response.getheader.side_effect=lambda key,default='':{'Content-Type':'text/html','Content-Encoding':'identity'}.get(key,default)
+        description='개인정보 없는 합성 게시글에서 AI 검색과 평가 기준을 정리하고 근거를 확인하는 학습 방법입니다.'
+        prefix=('<meta property="og:description" content="'+description+'">').encode()
+        split=prefix.index('개'.encode())+1
+        # The unread page tail is larger than the cap; metadata spans UTF-8 chunks.
+        response.read.side_effect=[prefix[:split],prefix[split:],b'x'*(MAX_HTML+1)]
+        connection=Mock();connection.getresponse.return_value=response
+        addresses=[(socket.AF_INET6,socket.SOCK_STREAM,6,'',('2606:4700:4700::1111',443,0,0)),(socket.AF_INET,socket.SOCK_STREAM,6,'',('93.184.216.34',443))]
+        with patch('skill_llm.socket.getaddrinfo',return_value=addresses),patch('skill_llm.PublicHTTPS',return_value=connection) as factory:
+            self.assertEqual(public_excerpt(URL),description)
+            factory.assert_called_once_with('www.instagram.com','93.184.216.34')
+            self.assertEqual(response.read.call_count,2)
+            self.assertTrue(all(call.args[0]<=8192 for call in response.read.call_args_list))
+            connection.close.assert_called_once()
+
     def test_validation_evidence_and_no_auto_save(self):
         with patch.dict(os.environ,{'OPENAI_MODEL':'synthetic-model','OPENAI_API_KEY':'synthetic-not-a-real-key'},clear=True),patch('skill_llm.request_summary',side_effect=lambda model,key,text,url:result(text)) as request,patch('skill_llm.public_excerpt',return_value=TEXT) as fetch:
             draft=self.service.draft(1,{'url':URL,'body':TEXT,'consent':True});fetch.assert_not_called();self.assertEqual(draft['kind'],'skill')

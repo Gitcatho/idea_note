@@ -1,3 +1,11 @@
+## Instagram 링크 연결·메타설명 수정 (#7, 2026-10-19)
+
+- 운영의 기존 읽기 함수로 사용자 제공 링크를 재현: HTTP 응답 이전 Network unreachable. IPv4 경로에서는 HTTP200이지만 기존 전체 응답512KB 제한에 걸림. OpenAI 호출이나 DB/세션 변경 없이 읽기 단계만 진단.
+- 수정 후보: 모든 DNS 결과의 공인 IP 검사 후 IPv4 우선 선택. UTF-8을 증분 디코딩하면서 최대512KB 범위에서 메타설명을 찾고 즉시 응답을 닫음. 본문 전체나 로그인 페이지를 우회해 읽지 않음.
+- 서버 파일/컨테이너를 교체하지 않고 후보를 별도 프로세스 메모리에 로드해 동일 링크의 공개 설명245자 확보(HTTP200,IPv4,읽은 응답16KB). 실제 링크/게시글 본문은 저장소에 기록하지 않음.
+- Python34개 통과. 새 회귀 검증은 듀얼스택 DNS에서 IPv4 선택, UTF-8 분할, 큰 미열람 후속 본문을 읽지 않는지 확인. 기존 SSRF/크기 제한 회귀 유지.
+- 운영 배포와 이 링크의 실제 LLM 요약은 아직 미실행. 운영은 기존 이미지 유지. 별도 배포 승인 후 백업·News_idea만 교체·보존 비교 필요.
+
 ## 승인·LLM 운영 배포 검증 (2026-10-19 21:42 KST)
 
 - 사용자 승인으로 데이터·인증 DB를 SQLite backup API로 먼저 보존하고 무결성·온라인 백업 전후 일치 확인. 서버 `approval-llm-rollout-20261019/database-snapshot/database-backup/`, 로컬 Git 제외 `var/deployments/approval-llm-20261019/database-snapshot/database-backup/`에 사본 보존. 사전 운영 기록5·계정1·세션1.

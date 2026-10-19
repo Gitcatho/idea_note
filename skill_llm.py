@@ -1,5 +1,6 @@
 """Explicit, bounded social-post summaries. No login scraping or workspace data."""
 from html.parser import HTMLParser
+import codecs
 import http.client
 import ipaddress
 import json
@@ -57,16 +58,22 @@ def public_excerpt(url):
             parsed=urlsplit(current)
             addresses={row[4][0] for row in socket.getaddrinfo(parsed.hostname,443,type=socket.SOCK_STREAM)}
             if not addresses or any(not ipaddress.ip_address(ip).is_global for ip in addresses):raise LLMError('게시글 주소에 안전하게 연결할 수 없습니다. 본문을 직접 붙여넣으세요.')
-            connection=PublicHTTPS(parsed.hostname,sorted(addresses)[0])
+            connection=PublicHTTPS(parsed.hostname,sorted(addresses,key=lambda ip:(ipaddress.ip_address(ip).version,ip))[0])
             try:
                 connection.request('GET',parsed.path,headers={'User-Agent':'NewsIdea/1.0 public-metadata-reader','Accept':'text/html','Accept-Encoding':'identity'})
                 response=connection.getresponse()
                 if response.status in [301,302,303,307,308]:
                     current=canonical_url(urljoin(current,response.getheader('Location','')));continue
                 if response.status!=200 or 'text/html' not in response.getheader('Content-Type','').lower() or response.getheader('Content-Encoding','identity')!='identity':raise LLMError('공개 본문을 가져오지 못했습니다. 게시글 본문을 직접 붙여넣으세요.')
-                data=response.read(MAX_HTML+1)
-                if len(data)>MAX_HTML:raise LLMError('게시글 응답이 너무 큽니다. 본문을 직접 붙여넣으세요.')
-                parser=Metadata();parser.feed(data.decode('utf-8',errors='replace'))
+                # Only the bounded HTML prefix is needed for public metadata.
+                parser=Metadata();decoder=codecs.getincrementaldecoder('utf-8')('replace');size=0
+                while size<MAX_HTML:
+                    chunk=response.read(min(8192,MAX_HTML-size))
+                    if not chunk:break
+                    size+=len(chunk)
+                    if size>MAX_HTML:raise LLMError('게시글 설명을 읽는 범위가 너무 큽니다. 본문을 직접 붙여넣으세요.')
+                    parser.feed(decoder.decode(chunk))
+                    if len(parser.description)>=40:break
                 text=parser.description.strip()
                 if len(text)<40 or len(text)>20000 or any(word in text.lower() for word in ['log in to instagram','login • instagram','sign up to see','로그인하고 더 보기']):raise LLMError('공개 게시글 설명을 확인할 수 없습니다. 로그인 우회 없이 본문을 직접 붙여넣어 주세요.')
                 return text

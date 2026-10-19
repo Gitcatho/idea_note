@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed (Bug Fixes)
+- Fix Instagram metadata reads on hosts without working IPv6 by preferring validated IPv4 addresses; stream only a bounded HTML prefix and stop once public metadata is available, preserving SSRF and size limits. [#7](https://github.com/Gitcatho/idea_note/issues/7).
 ### Changed
 - Documented verified backup/startup settings and read-only failure/disk diagnostics, including the uptime-based 24-hour backup interval and monitoring limitations.
 - Backed up and migrated all four desktop records into the web workspace at the user's request, preserving the original database, app and existing web records; verified authenticated calendar display.
