@@ -7,12 +7,14 @@ from pathlib import Path
 import sqlite3
 import threading
 import uuid
+from resume import validate_resume
 from urllib.parse import urlsplit
 
 KINDS = ('job', 'company', 'memo', 'contest', 'skill')
 MODES = ('dated', 'rolling', 'unknown')
 STATUSES = {'job': ['관심', '준비 중', '지원 완료', '면접', '합격', '종료'], 'company': ['탐색', '지원 예정', '지원 완료', '면접', '보류', '종료'], 'memo': ['정리 중', '확정', '기억할 것'], 'contest': ['관심', '준비 중', '참가 완료', '종료'], 'skill': ['읽을 것', '학습 중', '실습 완료', '보관']}
 KST = dt.timezone(dt.timedelta(hours=9))
+RESUME_FIELDS = {'resumePersonal': 2000, 'resumeEducation': 10000, 'resumeMilitary': 2000, 'resumeGrades': 4000, 'resumeCareer': 15000, 'resumeCertificates': 6000, 'resumeAwards': 6000, 'resumeActivities': 10000}
 
 def now():
     return dt.datetime.now(KST).isoformat(timespec='seconds')
@@ -71,6 +73,17 @@ def validate(record):
     result['status'] = record.get('status', STATUSES[result['kind']][0])
     if result['status'] not in STATUSES[result['kind']]:
         raise ValueError('상태를 확인하세요.')
+    if result['kind'] == 'memo':
+        result['memoType'] = record.get('memoType', 'resume' if any(record.get(key) for key in RESUME_FIELDS) else 'note')
+        if result['memoType'] not in ('note', 'resume'):
+            raise ValueError('메모 유형을 확인하세요.')
+        for field, limit in RESUME_FIELDS.items():
+            value = record.get(field, '')
+            if not isinstance(value, str) or len(value) > limit:
+                raise ValueError(f'{field}: 입력 길이/형식을 확인하세요.')
+            result[field] = value.strip()
+        if 'resumeData' in record:
+            result['resumeData'] = validate_resume(record['resumeData'])
     return result
 
 class Store:
@@ -122,10 +135,10 @@ class Store:
             for original, payload in records:
                 added += conn.execute('INSERT OR IGNORE INTO records VALUES (?,?,?,?)', (original['id'], json.dumps(payload, ensure_ascii=False), int(bool(original.get('deleted'))), now())).rowcount
         return added
-    def backup(self):
+    def backup(self, data=None):
         folder = self.root / 'backups'
         folder.mkdir(exist_ok=True, mode=0o700)
         target = folder / ('backup-' + dt.datetime.now(KST).strftime('%Y%m%d-%H%M%S-%f') + '.json')
-        target.write_text(json.dumps(self.export(), ensure_ascii=False, indent=2), encoding='utf-8')
+        target.write_text(json.dumps(self.export() if data is None else data, ensure_ascii=False, indent=2), encoding='utf-8')
         os.chmod(target, 0o600)
         return str(target)

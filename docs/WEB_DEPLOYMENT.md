@@ -1,3 +1,23 @@
+## Instagram 읽기·응답 형식 수정 배포 (2026-10-20 00:23 KST)
+
+사용자 승인으로 백업 후 News_idea만 교체했습니다. 원래 기록5·계정1·세션2·admin 비밀번호·다른서비스·443/8443 보존, ARM64 35개와 실제 링크 LLM 생성/편집기 전달 및 임시 저장 복구6개 검증 통과. 기존 운영 공간에는 초안을 저장하지 않았습니다.
+
+서버 사전백업은 `instagram-fix-rollout-20261019/database-snapshot/database-backup/`, 추가 응답 형식 수정 전 백업은 같은 rollout의 `pre-evidence-database-snapshot/database-backup/`입니다. Mac Git 제외 `var/deployments/instagram-fix-20261019/`에도 사본을 보존합니다. 실제 비밀값이나 개인 DB를 Git에 올리지 않습니다.
+
+전체 수정 전 복구 이미지 `news-idea-web:before-instagram-fix`, 소스 `instagram-fix-rollout-20261019/source-before.tar.gz` 보존. 중간 읽기 수정 버전은 `news-idea-web:instagram-reader-before-evidence-index`와 `source-reader-before-evidence.tar.gz` 보존. 인증 스키마/비밀번호/세션 형식은 바꾸지 않았으므로 승인된 코드 롤백은 해당 이전 이미지와 소스를 사용하고 데이터 볼륨은 그대로 둡니다. DB 복원은 이번에 수행하지 않았으며 현재 데이터 백업 후 별도 승인 범위입니다. Compose는 계속 `-f compose.web.yml -f compose.llm.yml`를 함께 사용합니다.
+
+## 최신 승인·탭 권한·LLM 배포 (2026-10-19 21:42 KST)
+
+사용자 승인으로 News_idea만 교체했습니다. 사전 데이터/인증 DB 백업과 이전 이미지 `news-idea-web:before-approval-llm`, 이전 소스 `approval-llm-rollout-20261019/source-before.tar.gz`를 보존합니다. 인증 백업은 같은 rollout의 `database-snapshot/database-backup/auth.sqlite3`입니다. 비밀번호와 원래 기록·세션 값 동일, 다른서비스·443/8443 보존, ARM64 33개·실제HTTPS 10개·실제LLM 합성본문 생성 확인. 자세한 결과는 QA.md 및 키 설정은 LLM_SETUP.md 참조.
+
+현재 LLM 설정을 유지하는 명령은 아래와 같습니다. 모델 기본값은 gpt-5.6-terra이며 키는 /data/.secrets/openai_api_key 사용자 직접 입력 파일입니다. 키를 .env에 넣지 않습니다.
+
+```sh
+docker compose -p news-idea -f compose.web.yml -f compose.llm.yml up -d --no-deps --no-build web
+```
+
+복구는 News_idea만 대상으로 합니다. 현재 DB와 배포 후 회원 데이터를 먼저 보존한 뒤 앱을 중지하고 사전 인증 DB·이전 이미지·이전 소스/Compose를 함께 복원합니다. 기존 기록 DB는 임의로 덮어쓰지 않습니다. 이전 버전으로 돌아가면 회원 승인/탭 제한 기능이 없어지므로 복구 동안 공개 접근을 별도로 점검해야 합니다. DB 사본 복원은 현재 새 계정·세션·권한을 잃을 수 있어 별도 승인 후 진행합니다. 실제 복구는 실행하지 않았습니다.
+
 # 로그인 웹앱: 실행과 운영
 
 매일 백업의 실제 실행 주기, 재부팅 자동 시작 점검 결과와 백업 실패·디스크 부족 확인 절차는 [OPERATIONS.md](OPERATIONS.md)를 참고하세요.
@@ -126,3 +146,37 @@ docker compose -p news-idea -f compose.web.yml stop web
 ```
 
 443 기존 라우팅이 그대로인지 전·후 비교합니다. 포트 해제 명령은 실제 Funnel 출력에서 안내받았지만 운영 공개를 유지하려고 실행하지 않았습니다. 기존 설정 사본은 서버 tailscale-before.json에 보존했습니다. Compose down을 사용할 때도 `-v`를 사용하지 않아 데이터를 보존합니다. 배포 이미지 ID는 deployment-status.json에 기록했습니다. 이전 이미지를 기록해 두고 앱만 교체하면 코드 롤백이 가능합니다. 서비스 중지·포트 공개 해제와 데이터 삭제는 별개입니다.
+
+## 세부 이력 확장 배포와 코드 복구 (2026-10-14 KST)
+
+17:55 KST News_idea 컨테이너만 업데이트했습니다. 운영4개 기록·인증 저장소·다른 서비스·443/8443 설정 보존 검증 완료. 백업은 서버 resume-detail-rollout/records-backup.json과 Mac var/deployments/resume-detail-20261014/records-backup.json에 보존하며 Git 제외입니다. 이전 이미지 news-idea-web:before-resume-detail 및 이전 소스 resume-detail-rollout/source-before.tar.gz 보존.
+
+문제 발생 시 승인된 코드 복구는 서버 프로젝트 폴더에서 아래처럼 News_idea만 수행합니다. 데이터 볼륨은 복원하거나 삭제하지 않습니다.
+
+```sh
+docker tag news-idea-web news-idea-web:resume-detail-deployed
+docker tag news-idea-web:before-resume-detail news-idea-web:latest
+docker compose -p news-idea -f compose.web.yml up -d --no-deps --no-build web
+```
+
+구버전은 새 구조화 이력 필드를 편집할 때 보존하지 못하므로 복구 중에는 세부 이력 편집을 피하고 최신 코드 복귀 후 작업합니다. JSON 사전백업을 가져오는 것만으로 기존 ID를 덮어쓰지는 않습니다. 실제 데이터 복원은 최신 백업과 원본을 보존한 별도 절차입니다. 전체 서버 재부팅과 Tailscale 변경은 하지 않습니다.
+
+## 회원 계정 전환 배포 #4 (2026-10-19 승인 배포 완료)
+
+이번 버전은 공개 회원가입을 제공하고 계정별 개인 공간을 분리합니다. 기존 관리자 아이디는 사용자 선택대로 admin이며 기존 비밀번호와 세션 토큰/CSRF/만료값을 유지합니다. 새 계정의 IDs는2부터 시작하며 admin ID1은 가입으로 선점할 수 없습니다. admin은 웹상 다른 회원의 데이터를 조회할 권한이 없습니다.
+
+- 기존 `/data/news-idea.sqlite3`·`/data/backups`는 admin 전용으로 유지. 새 회원은 `/data/users/<내부 정수ID>/news-idea.sqlite3`·`backups/` 사용. 로그인 세션이 계정ID를 결정하며 요청 파라미터·경로·기록ID로 다른 저장소를 선택할 수 없음.
+- `/data/auth.sqlite3`에 users/시도제한 테이블과 sessions.user_id 추가. 기존 admin 비밀번호 해시를 admin 계정으로 연결하고 기존 세션은 user_id1로 매핑. 사용자가 비밀번호를 재입력하거나 변경할 필요 없음. 기존 `--set-password`는 admin만 재설정하고 admin 세션만 무효화하므로 배포 검증에는 실행하지 않음.
+- 시작 시와 연속 가동24시간마다 모든 회원 저장소를 개별 백업. 다운로드/수동 백업/가져오기는 로그인 회원 저장소만 사용. 한 회원의 백업 실패가 다른 회원 백업 시도를 막지 않음. healthy는 기존 소유자 DB 확인이며 모든 회원 백업 성공을 의미하지 않음.
+- 로그인/가입만 공개이며 Host·Origin·세션·CSRF·HTTPS 쿠키 검사 유지. 메모/이력서 내용은 외부 AI 서비스나 GitHub로 전송하지 않음. 서버 권한을 가진 운영자는 SQLite 파일을 읽을 수 있으며 디스크 암호화/E2EE는 이번 기능이 아님.
+- 가입은10회/시간·최대100계정으로 제한, 로그인은 계정별5회/15분·전체30회/15분. 전역 제한에 도달하면 다른 사용자도 잠시 대기해야 함. 비밀번호 찾기·계정 삭제·첨부 업로드·메일 인증은 미구현. JSON 백업은 기록만 포함하며 계정/세션 복구에는 보호된 auth.sqlite3 사본도 필요.
+
+승인 후 절차:
+1. 운영 기록과 인증 DB를 SQLite backup API로 일관되게 백업하고 서버/로컬 보호 경로에 보존. 각 회원의 ID와 저장소 대응관계는 auth DB와 함께 보존하며 실제 값은 출력/커밋하지 않음. 현재 이미지·소스, 다른 컨테이너 ID/이미지와443/8443 Funnel 설정을 읽기 전용으로 기록.
+2. 운영 볼륨을 연결하지 않은 임시 저장소에서 ARM64 이미지와 합성 계정 두 개·기존 스키마 전환을 검증. tests/fixture와 사용자 비밀번호를 운영에 넣지 않음.
+3. News_idea web만 `up -d --no-deps --no-build web`로 교체. 다른 컨테이너·Tailscale·서버 재부팅 없음. auth 스키마 변경 외 기존 비밀번호 해시·세션3필드·기록 전체 일치 검증. 재시작으로 정기백업24시간 타이머는 초기화됨.
+4. 실제 HTTPS에서 admin 기존 데이터와 회원가입/두 계정 데이터 격리·백업/내보내기·로그아웃을 합성 데이터로 검증. 테스트 회원 정리는 해당 테스트 계정/저장소만 확인 후 수행. 사용자의 실제 개인정보는 직접 입력.
+
+복구: 인증 스키마가 변경되므로 이전 이미지로만 되돌리면 안 됩니다. 기존 버전은 sessions의3열 INSERT를 사용해4열 전환 DB에서 로그인 실패할 수 있습니다. 문제 발생 시 News_idea만 중지하고 현재 전체 볼륨과 신규 회원 데이터를 먼저 별도 보존한 뒤, 사전 auth.sqlite3 사본과 이전 이미지/소스를 함께 복원합니다. 기존 기록 DB는 덮어쓰지 않습니다. 새로 가입한 계정은 구버전에서 로그인할 수 없으므로 신규 회원 데이터는 보존하고 새 버전 재개 때 처리합니다. 다른 서비스·443/8443 설정과 전체 서버는 변경하지 않습니다.
+
+회원 버전 운영 결과: 2026-10-19 13:06 KST 배포, 원래5개 기록·admin 비밀번호·사전 만료된 세션4개 값 보존. next backup 약10월20일13:06 KST. 복구 이미지 `news-idea-web:before-members`, 이전 소스 `members-rollout-20261019/source-before.tar.gz`, 인증 DB 사전사본 `members-rollout-20261019/database-backup/auth.sqlite3`. 데이터/인증 사본은 로컬 Git 제외 `var/deployments/members-20261019/database-backup/`에도 보존. 만료 세션은 유효하게 연장하지 않았으므로 admin+기존 비밀번호로 직접 로그인합니다.

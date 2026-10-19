@@ -1,10 +1,12 @@
 'use strict';
 // Adapt the existing desktop bridge to authenticated same-origin HTTP.
+window.webPermissions={tabs:[],approved:false,isAdmin:false};
 let webCSRF='';
 const webReady=(async()=>{
  const response=await fetch('/api/session');
  if(response.status===401){location.replace('/login');throw Error('로그인이 필요합니다.');}
- const result=await response.json();webCSRF=result.data.csrf;
+ const result=await response.json();if(!response.ok){location.replace('/login?pending=1');throw Error('관리자 승인이 필요합니다.');}window.webPermissions=result.data;webCSRF=result.data.csrf;
+ const identity=document.getElementById('memberIdentity');if(identity)identity.textContent=result.data.username+' 님의 개인 공간';
 })();
 window.pywebview={api:{dispatch:async(action,payload={})=>{
  await webReady;

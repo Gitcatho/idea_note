@@ -1,11 +1,18 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed (Bug Fixes)
+- Use numeric source-evidence IDs in strict OpenAI responses so quotes in social-post descriptions cannot invalidate the output schema; map validated IDs back to exact source excerpts. [#7](https://github.com/Gitcatho/idea_note/issues/7).
+- Fix Instagram metadata reads on hosts without working IPv6 by preferring validated IPv4 addresses; stream only a bounded HTML prefix and stop once public metadata is available, preserving SSRF and size limits. [#7](https://github.com/Gitcatho/idea_note/issues/7).
 ### Changed
 - Documented verified backup/startup settings and read-only failure/disk diagnostics, including the uptime-based 24-hour backup interval and monitoring limitations.
 - Backed up and migrated all four desktop records into the web workspace at the user's request, preserving the original database, app and existing web records; verified authenticated calendar display.
 - Allow administrator passwords of at least 10 characters at the user's request; passwords are still entered privately through the terminal.
 ### Added
+- Admin approval and per-tab server authorization with preserved data/session rows. Deployed with user approval; original passwords, records and sessions preserved. [#8](https://github.com/Gitcatho/idea_note/issues/8).
+- Consent-based Instagram/Threads metadata or pasted-text LLM skill drafts, review before saving, bounded requests and server-only secrets. Deployed with user approval; live synthetic-text generation verified. [#7](https://github.com/Gitcatho/idea_note/issues/7).
+- Username/password login and public signup with isolated per-member records, backups and API access; preserves the legacy admin password, records and valid sessions. Deployed with user approval; verified on ARM64 and production HTTPS, preserving existing owner records/password/sessions and other services. [#4](https://github.com/Gitcatho/idea_note/issues/4).
+- Structured resume registration with names, address, military dates, education and grades, top three courses, repeatable certificates/careers/awards/activities, calendar inputs, calculated periods and grouped detail cards; preserves legacy notes and supports search, validated backup/import. [#2](https://github.com/Gitcatho/idea_note/issues/2).
 - Initialized GitHub source publication with an ignore-only first commit and a separate existing-source import; excludes personal data, backups, secrets, AI instructions and build/QA artifacts. [#1](https://github.com/Gitcatho/idea_note/issues/1).
 - Approved ARM64 Raspberry Pi deployment and separate public HTTPS Funnel on port8443, preserving existing services and port443. Verified server APIs, public relay mobile browser, restart/persistence and locked empty production storage; administrator password awaits direct user setup. Linux process address-space cap replaces unsupported Docker memory limits.
 - Single-admin web workspace with scrypt passwords, persistent revocable sessions, CSRF/origin checks and login throttling; authenticated data/backup APIs and responsive mobile layout.
