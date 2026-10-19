@@ -1,3 +1,11 @@
+## Instagram 읽기·응답 형식 수정 배포 (2026-10-20 00:23 KST)
+
+사용자 승인으로 백업 후 News_idea만 교체했습니다. 원래 기록5·계정1·세션2·admin 비밀번호·다른서비스·443/8443 보존, ARM64 35개와 실제 링크 LLM 생성/편집기 전달 및 임시 저장 복구6개 검증 통과. 기존 운영 공간에는 초안을 저장하지 않았습니다.
+
+서버 사전백업은 `instagram-fix-rollout-20261019/database-snapshot/database-backup/`, 추가 응답 형식 수정 전 백업은 같은 rollout의 `pre-evidence-database-snapshot/database-backup/`입니다. Mac Git 제외 `var/deployments/instagram-fix-20261019/`에도 사본을 보존합니다. 실제 비밀값이나 개인 DB를 Git에 올리지 않습니다.
+
+전체 수정 전 복구 이미지 `news-idea-web:before-instagram-fix`, 소스 `instagram-fix-rollout-20261019/source-before.tar.gz` 보존. 중간 읽기 수정 버전은 `news-idea-web:instagram-reader-before-evidence-index`와 `source-reader-before-evidence.tar.gz` 보존. 인증 스키마/비밀번호/세션 형식은 바꾸지 않았으므로 승인된 코드 롤백은 해당 이전 이미지와 소스를 사용하고 데이터 볼륨은 그대로 둡니다. DB 복원은 이번에 수행하지 않았으며 현재 데이터 백업 후 별도 승인 범위입니다. Compose는 계속 `-f compose.web.yml -f compose.llm.yml`를 함께 사용합니다.
+
 ## 최신 승인·탭 권한·LLM 배포 (2026-10-19 21:42 KST)
 
 사용자 승인으로 News_idea만 교체했습니다. 사전 데이터/인증 DB 백업과 이전 이미지 `news-idea-web:before-approval-llm`, 이전 소스 `approval-llm-rollout-20261019/source-before.tar.gz`를 보존합니다. 인증 백업은 같은 rollout의 `database-snapshot/database-backup/auth.sqlite3`입니다. 비밀번호와 원래 기록·세션 값 동일, 다른서비스·443/8443 보존, ARM64 33개·실제HTTPS 10개·실제LLM 합성본문 생성 확인. 자세한 결과는 QA.md 및 키 설정은 LLM_SETUP.md 참조.

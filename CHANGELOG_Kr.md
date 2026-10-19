@@ -2,6 +2,7 @@
 
 ## [미출시]
 ### 버그 수정 (Fixed)
+- 게시글 설명의 따옴표가 OpenAI 응답 스키마를 깨뜨리지 않도록 근거를 정수 번호로 선택하고, 검증된 번호를 원문 발췌로 변환하도록 수정. [#7](https://github.com/Gitcatho/idea_note/issues/7).
 - IPv6 연결이 불가능한 서버에서 검증된 IPv4 주소를 우선하고, 큰 Instagram HTML은 제한된 앞부분에서 공개 설명을 찾으면 읽기를 중단하도록 수정. SSRF·크기 제한 유지. [#7](https://github.com/Gitcatho/idea_note/issues/7).
 ### 변경
 - 자동 백업·부팅 설정 점검과 읽기 전용 실패·디스크 점검 절차 문서화. 가동 시간 기준24시간 백업 주기와 모니터링 한계 명시.

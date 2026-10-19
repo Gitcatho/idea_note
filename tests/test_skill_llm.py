@@ -77,18 +77,33 @@ class SkillLLMTests(unittest.TestCase):
         finally:self.service.lock.release()
 
     def test_responses_payload_is_bounded_no_store_and_errors_hide_credentials(self):
-        response=Mock(status=200);response.read.return_value=json.dumps({'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':json.dumps(result())}]}]}).encode()
+        response=Mock(status=200);response.read.return_value=json.dumps({'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':json.dumps(dict(result(),evidence=0))}]}]}).encode()
         connection=Mock();connection.getresponse.return_value=response
         with patch('skill_llm.http.client.HTTPSConnection',return_value=connection) as factory:
-            self.assertEqual(request_summary('synthetic-model','synthetic-not-a-real-key',TEXT,URL),result())
+            self.assertEqual(request_summary('synthetic-model','synthetic-not-a-real-key',TEXT,URL),dict(result(),evidence=TEXT[:100]))
             self.assertEqual(factory.call_args.args[0],'api.openai.com')
             args=connection.request.call_args;self.assertEqual(args.args[:2],('POST','/v1/responses'))
             payload=json.loads(args.kwargs['body']);self.assertFalse(payload['store']);self.assertEqual(payload['max_output_tokens'],2000);self.assertTrue(payload['text']['format']['strict']);self.assertNotIn('tools',payload)
-            quotes=payload['text']['format']['schema']['properties']['evidence']['enum'];self.assertTrue(quotes);self.assertTrue(all(10<=len(quote)<=100 and quote in TEXT for quote in quotes))
-            self.assertEqual(set(json.loads(payload['input'])),{'source_url','excerpt'})
+            indices=payload['text']['format']['schema']['properties']['evidence']['enum'];self.assertEqual(indices,list(range(len(indices))));self.assertTrue(all(type(index) is int for index in indices))
+            self.assertEqual(set(json.loads(payload['input'])),{'source_url','excerpt','evidence_options'})
             response.status=401
             with self.assertRaises(LLMError) as failure:request_summary('synthetic-model','synthetic-not-a-real-key',TEXT,URL)
             self.assertNotIn('synthetic-not-a-real-key',str(failure.exception))
+
+    def test_quoted_source_uses_numeric_evidence_and_rejects_invalid_indices(self):
+        text='Synthetic AI says "use retrieval", checks backslashes \\ and emoji 🧪, and evaluates source-grounded answers.'
+        response=Mock(status=200);connection=Mock();connection.getresponse.return_value=response
+        response.read.return_value=json.dumps({'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':json.dumps(dict(result(text),evidence=0))}]}]}).encode()
+        with patch('skill_llm.http.client.HTTPSConnection',return_value=connection):
+            draft=request_summary('synthetic-model','synthetic-not-a-real-key',text,URL)
+            self.assertEqual(draft['evidence'],text[:100])
+            payload=json.loads(connection.request.call_args.kwargs['body'])
+            self.assertEqual(payload['text']['format']['schema']['properties']['evidence']['type'],'integer')
+            self.assertNotIn('"use retrieval"',json.dumps(payload['text']['format']['schema']))
+            self.assertEqual(json.loads(payload['input'])['evidence_options'][0],{'index':0,'text':text[:100]})
+            for index in [-1,999,True,'0']:
+                response.read.return_value=json.dumps({'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':json.dumps(dict(result(text),evidence=index))}]}]}).encode()
+                with self.assertRaises(LLMError):request_summary('synthetic-model','synthetic-not-a-real-key',text,URL)
 
     def test_api_requires_approved_skill_permission_and_draft_only(self):
         self.auth.register('llm_member','synthetic-member-password','synthetic-member-password');self.auth.set_access(1,2,True,['memo'])

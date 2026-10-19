@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Fixed (Bug Fixes)
+- Use numeric source-evidence IDs in strict OpenAI responses so quotes in social-post descriptions cannot invalidate the output schema; map validated IDs back to exact source excerpts. [#7](https://github.com/Gitcatho/idea_note/issues/7).
 - Fix Instagram metadata reads on hosts without working IPv6 by preferring validated IPv4 addresses; stream only a bounded HTML prefix and stop once public metadata is available, preserving SSRF and size limits. [#7](https://github.com/Gitcatho/idea_note/issues/7).
 ### Changed
 - Documented verified backup/startup settings and read-only failure/disk diagnostics, including the uptime-based 24-hour backup interval and monitoring limitations.
