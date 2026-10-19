@@ -21,10 +21,12 @@ document.getElementById('login').onsubmit=async event=>{
  try{
   const response=await fetch(signup?'/signup':'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   if(response.ok){
-   if(signup){document.getElementById('login').reset();error.textContent='가입되었습니다. 로그인 화면으로 이동합니다.';location.replace('/login');}
+   if(signup){document.getElementById('login').reset();error.textContent='가입 신청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.';location.replace('/login?pending=1');}
    else location.replace('/');
   }else{
-   const result=await response.json();error.textContent=signup?result.error||'가입하지 못했습니다.':response.status===429?'시도가 너무 많습니다. 15분 후 다시 시도하세요.':'아이디 또는 비밀번호를 확인하세요.';
+   const result=await response.json();error.textContent=signup?result.error||'가입하지 못했습니다.':response.status===403?result.error:response.status===429?'시도가 너무 많습니다. 15분 후 다시 시도하세요.':'아이디 또는 비밀번호를 확인하세요.';
   }
  }catch(error_){error.textContent='연결을 확인하고 다시 시도하세요.';}finally{button.disabled=false;}
 };
+
+if(new URLSearchParams(location.search).has('pending'))document.getElementById('error').textContent='가입 신청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.';

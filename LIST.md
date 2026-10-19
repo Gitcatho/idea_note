@@ -7,6 +7,9 @@
 | Gitcatho/idea_note#1 | https://github.com/Gitcatho/idea_note/issues/1 | 기존 News_idea 구현 최초 등록 | Gitcatho | OPEN | 2026-10-14 KST |
 | Gitcatho/idea_note#4 | https://github.com/Gitcatho/idea_note/issues/4 | 아이디 로그인·회원가입과 회원별 개인 데이터 분리 | Gitcatho | OPEN | 2026-10-19 KST |
 | Gitcatho/idea_note#2 | https://github.com/Gitcatho/idea_note/issues/2 | 이력서 메모에 항목별 입력칸 추가 | Gitcatho | OPEN | 2026-10-14 KST |
+| Gitcatho/idea_note#6 | https://github.com/Gitcatho/idea_note/issues/6 | 관리자 승인·탭 접근 권한과 LLM 스킬 등록 | Gitcatho | OPEN | 2026-10-19 KST |
+| Gitcatho/idea_note#7 | https://github.com/Gitcatho/idea_note/issues/7 | Instagram·Threads 게시글의 LLM 스킬 초안 등록 | Gitcatho | OPEN | 2026-10-19 KST |
+| Gitcatho/idea_note#8 | https://github.com/Gitcatho/idea_note/issues/8 | 관리자 회원 승인과 탭별 API 권한 제어 | Gitcatho | OPEN | 2026-10-19 KST |
 
 로컬 구현·검증: docs/QA.md 및 CHANGELOG 참조. 최초 .gitignore 커밋 ff77562는 원격 main 반영 확인. 소스 등록 검증 결과는 해당 이슈에 기록합니다. 원본 참고 사본은 로컬에만 보존합니다.
 
@@ -17,3 +20,8 @@
 #4: feat/4-member-accounts 격리 브랜치. #2 의존 변경은 별도 커밋7964f11로 보존, 원래 폴더의 미커밋 변경과 개인정보 파일 보존.
 
 #4 2026-10-19 승인 배포: ARM64 Python25개·HTTPS8개 통과. 기존5개기록/admin해시/세션4개와 다른서비스/443/8443 보존. 검증회원/저장소 제거. 회원 기능 커밋 f9463a5와 의존 커밋7964f11 원격 반영 확인. [PR #5](https://github.com/Gitcatho/idea_note/pull/5) OPEN·main 대상·리뷰 대기·미병합, 자동 병합 미설정. 이슈#4 완료 기준 충족을 원격 본문에 반영했으며 이슈는 OPEN 유지. 이번 소스 등록에서 운영 서버 변경 없음.
+
+
+
+
+#6의 실제 하위 이슈는 #7·#8입니다. 로컬 구현은 미커밋이며 2026-10-19 승인 운영 배포·회원 권한 검증·합성 본문 실제 OpenAI 호출 확인 완료입니다. PR/병합과 이슈 종료는 별도입니다.

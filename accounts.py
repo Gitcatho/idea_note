@@ -1,6 +1,8 @@
 """Local account authentication; credentials never leave the server."""
 from contextlib import contextmanager
 import hashlib
+import json
+from store import KINDS
 import os
 from pathlib import Path
 import re
@@ -25,6 +27,12 @@ class Auth:
             legacy = db.execute('SELECT password FROM admin WHERE id=1').fetchone()
             if legacy:
                 db.execute('INSERT OR IGNORE INTO users(id,username,password) VALUES(1,?,?)', ('admin', legacy[0]))
+            user_columns={r[1] for r in db.execute('PRAGMA table_info(users)')}
+            if 'approved' not in user_columns:
+                db.execute('ALTER TABLE users ADD COLUMN approved INTEGER NOT NULL DEFAULT 0')
+            if 'tabs' not in user_columns:
+                db.execute("ALTER TABLE users ADD COLUMN tabs TEXT NOT NULL DEFAULT '[]'")
+            db.execute('UPDATE users SET approved=1,tabs=? WHERE id=1',(json.dumps(list(KINDS)),))
         os.chmod(self.path, 0o600)
         self.dummy_hash = generate_password_hash(secrets.token_urlsafe(32), method='scrypt')
 
@@ -54,6 +62,7 @@ class Auth:
         with self.connection() as db:
             db.execute('INSERT OR REPLACE INTO admin VALUES (1,?)', (hashed,))
             db.execute('INSERT INTO users(id,username,password) VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET password=excluded.password', ('admin', hashed))
+            db.execute('UPDATE users SET approved=1,tabs=? WHERE id=1',(json.dumps(list(KINDS)),))
             db.execute('DELETE FROM sessions WHERE user_id=1')
             db.execute('DELETE FROM attempts')
             db.execute('DELETE FROM account_attempts WHERE username=?', ('admin',))
@@ -101,6 +110,9 @@ class Auth:
             valid = isinstance(password, str) and len(password) <= 1024 and check_password_hash(row[1] if row else self.dummy_hash, password)
             if not row or not valid:
                 return None, 401
+            db.execute('DELETE FROM account_attempts WHERE username=?', (username,))
+            if row[0] != 1 and not db.execute('SELECT approved FROM users WHERE id=?',(row[0],)).fetchone()[0]:
+                return None, 403
             token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
             db.execute('DELETE FROM sessions WHERE user_id=? AND expires<?', (row[0],time.time()))
             db.execute('INSERT INTO sessions(token,csrf,expires,user_id) VALUES (?,?,?,?)', (self.digest(token), csrf, time.time()+43200,row[0]))
@@ -118,3 +130,36 @@ class Auth:
     def user_ids(self):
         with self.connection() as db:
             return [r[0] for r in db.execute('SELECT id FROM users ORDER BY id')]
+
+    def access(self, user_id):
+        if user_id == 1:
+            return {'approved':True,'tabs':list(KINDS),'isAdmin':True}
+        with self.connection() as db:
+            row=db.execute('SELECT approved,tabs FROM users WHERE id=?',(user_id,)).fetchone()
+        if not row:
+            return {'approved':False,'tabs':[],'isAdmin':False}
+        try:
+            stored=json.loads(row[1])
+            tabs=[kind for kind in KINDS if isinstance(stored,list) and kind in stored]
+        except (ValueError,TypeError):
+            tabs=[]
+        return {'approved':bool(row[0]),'tabs':tabs if row[0] else [],'isAdmin':False}
+
+    def members(self, actor):
+        if actor != 1:
+            raise PermissionError('관리자만 회원 권한을 관리할 수 있습니다.')
+        with self.connection() as db:
+            rows=db.execute('SELECT id,username FROM users ORDER BY id').fetchall()
+        return [dict(id=id_,username=name,**self.access(id_)) for id_,name in rows]
+
+    def set_access(self, actor, user_id, approved, tabs):
+        if actor != 1:
+            raise PermissionError('관리자만 회원 권한을 관리할 수 있습니다.')
+        if type(user_id) is not int or user_id <= 1:
+            raise ValueError('관리자 본인 권한은 변경할 수 없습니다.')
+        if type(approved) is not bool or not isinstance(tabs,list) or len(tabs)>len(KINDS) or any(not isinstance(t,str) or t not in KINDS for t in tabs) or len(tabs)!=len(set(tabs)):
+            raise ValueError('승인 여부와 허용 탭을 확인하세요.')
+        with self.connection() as db:
+            if not db.execute('UPDATE users SET approved=?,tabs=? WHERE id=?',(int(approved),json.dumps([kind for kind in KINDS if kind in tabs]),user_id)).rowcount:
+                raise ValueError('회원을 찾을 수 없습니다.')
+        return self.access(user_id)

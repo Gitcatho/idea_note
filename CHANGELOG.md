@@ -6,6 +6,7 @@
 - Backed up and migrated all four desktop records into the web workspace at the user's request, preserving the original database, app and existing web records; verified authenticated calendar display.
 - Allow administrator passwords of at least 10 characters at the user's request; passwords are still entered privately through the terminal.
 ### Added
+- Admin approval and per-tab server authorization with preserved data/session rows. Deployed with user approval; original passwords, records and sessions preserved. [#8](https://github.com/Gitcatho/idea_note/issues/8).
 - Username/password login and public signup with isolated per-member records, backups and API access; preserves the legacy admin password, records and valid sessions. Deployed with user approval; verified on ARM64 and production HTTPS, preserving existing owner records/password/sessions and other services. [#4](https://github.com/Gitcatho/idea_note/issues/4).
 - Structured resume registration with names, address, military dates, education and grades, top three courses, repeatable certificates/careers/awards/activities, calendar inputs, calculated periods and grouped detail cards; preserves legacy notes and supports search, validated backup/import. [#2](https://github.com/Gitcatho/idea_note/issues/2).
 - Initialized GitHub source publication with an ignore-only first commit and a separate existing-source import; excludes personal data, backups, secrets, AI instructions and build/QA artifacts. [#1](https://github.com/Gitcatho/idea_note/issues/1).

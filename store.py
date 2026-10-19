@@ -135,10 +135,10 @@ class Store:
             for original, payload in records:
                 added += conn.execute('INSERT OR IGNORE INTO records VALUES (?,?,?,?)', (original['id'], json.dumps(payload, ensure_ascii=False), int(bool(original.get('deleted'))), now())).rowcount
         return added
-    def backup(self):
+    def backup(self, data=None):
         folder = self.root / 'backups'
         folder.mkdir(exist_ok=True, mode=0o700)
         target = folder / ('backup-' + dt.datetime.now(KST).strftime('%Y%m%d-%H%M%S-%f') + '.json')
-        target.write_text(json.dumps(self.export(), ensure_ascii=False, indent=2), encoding='utf-8')
+        target.write_text(json.dumps(self.export() if data is None else data, ensure_ascii=False, indent=2), encoding='utf-8')
         os.chmod(target, 0o600)
         return str(target)

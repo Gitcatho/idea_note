@@ -22,7 +22,12 @@ class MemberTests(unittest.TestCase):
         self.temp.cleanup()
 
     def signup(self, name, password='synthetic-member-password', client=None):
-        return (client or self.app.test_client()).post('/signup', base_url=self.origin, headers={'Origin':self.origin}, json={'username':name,'password':password,'confirmation':password})
+        response=(client or self.app.test_client()).post('/signup', base_url=self.origin, headers={'Origin':self.origin}, json={'username':name,'password':password,'confirmation':password})
+        if response.status_code==201:
+            with self.auth.connection() as db:
+                user_id=db.execute('SELECT id FROM users WHERE username=?',(name.lower(),)).fetchone()[0]
+            self.auth.set_access(1,user_id,True,['job','company','memo','contest','skill'])
+        return response
 
     def login(self, name, password='synthetic-member-password'):
         client = self.app.test_client()
@@ -115,6 +120,8 @@ class MemberTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             app=create_app(root,self.origin,testing=True);auth=app.extensions['auth']
             self.assertEqual(auth.register('first_member','synthetic-member-password','synthetic-member-password'),201)
+            auth.set_password('synthetic-owner-password')
+            auth.set_access(1,2,True,['memo'])
             token,status=auth.login('synthetic-member-password','first_member')
             self.assertEqual(status,200)
             self.assertEqual(auth.session(token)[1],2)

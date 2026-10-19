@@ -13,7 +13,7 @@ from urllib.parse import urlsplit
 
 from flask import Flask, Response, g, jsonify, redirect, request
 from desktop import SOURCES
-from store import Store
+from store import Store, KINDS
 from accounts import Auth
 
 ROOT = Path(__file__).resolve().parent
@@ -64,6 +64,11 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
         if not session:
             return (jsonify(error='로그인이 필요합니다.'), 401) if request.path.startswith('/api/') or request.path == '/logout' else redirect('/login')
         g.csrf, g.user_id, g.username = session
+        g.access = auth.access(g.user_id)
+        if not g.access["approved"] and request.path != "/logout":
+            if request.path.startswith("/api/"):
+                return jsonify(ok=False,error="관리자 승인을 기다리거나 이용이 중지된 계정입니다."), 403
+            return redirect("/login?pending=1")
         g.store = member_store(g.user_id)
         if request.method not in ('GET', 'HEAD') and not hmac.compare_digest(request.headers.get('X-CSRF-Token', '').encode(), g.csrf.encode()):
             return jsonify(error='보안 토큰이 올바르지 않습니다.'), 403
@@ -87,7 +92,7 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
             return Response(LOGIN, mimetype='text/html')
         body = request.get_json(silent=True)
         token, status = auth.login(body.get('password') if isinstance(body, dict) else None, body.get('username') if isinstance(body, dict) else None)
-        response = jsonify(ok=status == 200)
+        response = jsonify(ok=status == 200, error="관리자 승인을 기다리거나 이용이 중지된 계정입니다." if status == 403 else "")
         response.status_code = status
         if token:
             response.set_cookie(COOKIE, token, max_age=43200, secure=secure, httponly=True, samesite='Strict', path='/')
@@ -138,14 +143,30 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
         html = html.replace('<script>/*APP_JS*/</script>', '<script src="/assets/web.js"></script><script src="/assets/app.js"></script>')
         html = html.replace('로컬 전용 워크스페이스', '개인 웹 워크스페이스').replace('개인 메모는 이 Mac에 저장됩니다.', '<span id="memberIdentity">로그인한 회원의 개인 공간입니다.</span>')
         html = html.replace('<button id="trashTab">', '<button id="logout">로그아웃</button><button id="trashTab">')
+        html = html.replace('<script src="/assets/app.js"></script>', '<script src="/assets/app.js"></script><script src="/assets/members.js"></script>')
         html = html.replace('하나의 로컬 공간', '개인 서버').replace('앱 시작 시', '서버 시작 시')
         return Response(html, mimetype='text/html')
 
     @app.get('/assets/<name>')
     def asset(name):
-        if name not in ('app.js', 'app.css', 'web.js', 'resume.js'):
+        if name not in ('app.js', 'app.css', 'web.js', 'resume.js', 'members.js'):
             return '', 404
         return Response((ROOT/'static'/name).read_text(), mimetype='text/css' if name.endswith('.css') else 'text/javascript')
+
+    def visible_export():
+        data=g.store.export()
+        data['records']=[record for record in data['records'] if record['kind'] in g.access['tabs']]
+        return data
+
+    def check_kind(kind):
+        if kind not in g.access['tabs']:
+            raise PermissionError('이 탭을 이용할 권한이 없습니다.')
+
+    def check_existing(id_):
+        with g.store.connection() as db:
+            row=db.execute('SELECT json_extract(payload,?) FROM records WHERE id=?',('$.kind',id_)).fetchone()
+        if row:
+            check_kind(row[0])
 
     @app.post('/api/<action>')
     def api(action):
@@ -153,27 +174,43 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
         if not isinstance(payload, dict):
             return jsonify(ok=False, error='JSON 객체가 필요합니다.'), 400
         try:
-            if action == 'session':
-                data = {'csrf':g.csrf, 'username':g.username}
+            if action in ('members','member_access'):
+                if g.user_id != 1:
+                    raise PermissionError('관리자만 회원 권한을 관리할 수 있습니다.')
+                data=auth.members(g.user_id) if action=='members' else auth.set_access(g.user_id,payload.get('userId'),payload.get('approved'),payload.get('tabs'))
+            elif action == 'session':
+                data = {'csrf':g.csrf, 'username':g.username, **g.access}
             elif action == 'list':
-                data = {'records':g.store.list(), 'sources':SOURCES, 'root':'개인 서버 저장소'}
+                data = {'records':visible_export()['records'], 'sources':SOURCES, 'root':'개인 서버 저장소', 'permissions':g.access}
             elif action == 'save':
+                check_kind(payload.get('kind'))
+                if payload.get('id'):
+                    check_existing(payload['id'])
                 data = g.store.save(payload)
             elif action in ('trash', 'restore'):
                 if not isinstance(payload.get('id'), str):
                     raise ValueError('ID를 확인하세요.')
+                check_existing(payload['id'])
                 g.store.trash(payload['id'], action == 'trash')
                 data = True
             elif action == 'export':
-                data = g.store.export()
+                data = visible_export()
             elif action == 'import':
-                g.store.backup()
+                if not isinstance(payload.get('records'),list):
+                    raise ValueError('백업 형식을 확인하세요.')
+                for record in payload['records']:
+                    if not isinstance(record,dict):
+                        raise ValueError('백업 형식을 확인하세요.')
+                    check_kind(record.get('kind'))
+                g.store.backup(visible_export())
                 data = g.store.merge(payload)
             elif action == 'backup':
-                data = Path(g.store.backup()).name
+                data = Path(g.store.backup(visible_export())).name
             else:
                 return jsonify(ok=False, error='지원하지 않는 동작입니다.'), 404
             return jsonify(ok=True, data=data)
+        except PermissionError as e:
+            return jsonify(ok=False,error=str(e)), 403
         except ValueError as e:
             return jsonify(ok=False, error=str(e)), 400
         except Exception:
@@ -181,7 +218,7 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
 
     @app.get('/api/session')
     def session_info():
-        return jsonify(ok=True, data={'csrf':g.csrf, 'username':g.username})
+        return jsonify(ok=True, data={'csrf':g.csrf, 'username':g.username, **g.access})
 
     @app.errorhandler(413)
     def too_large(error):
