@@ -22,7 +22,7 @@ class WebTests(unittest.TestCase):
         self.assertEqual(auth.login('x' * 10)[1], 200)
 
     def login(self):
-        response = self.client.post('/login', base_url=self.origin, headers={'Origin':self.origin}, json={'password':'test-only-password-12345'})
+        response = self.client.post('/login', base_url=self.origin, headers={'Origin':self.origin}, json={'username':'admin','password':'test-only-password-12345'})
         self.assertEqual(response.status_code, 200)
         self.csrf = self.client.get('/api/session', base_url=self.origin).json['data']['csrf']
         return response
@@ -66,9 +66,9 @@ class WebTests(unittest.TestCase):
 
     def test_persistent_rate_limit(self):
         for _ in range(5):
-            self.assertEqual(self.client.post('/login', base_url=self.origin, headers={'Origin':self.origin}, json={'password':'wrong'}).status_code, 401)
+            self.assertEqual(self.client.post('/login', base_url=self.origin, headers={'Origin':self.origin}, json={'username':'admin','password':'wrong'}).status_code, 401)
         other = create_app(self.temp.name, self.origin, testing=True).test_client()
-        response = other.post('/login', base_url=self.origin, headers={'Origin':self.origin,'X-Forwarded-For':'1.2.3.4'}, json={'password':'test-only-password-12345'})
+        response = other.post('/login', base_url=self.origin, headers={'Origin':self.origin,'X-Forwarded-For':'1.2.3.4'}, json={'username':'admin','password':'test-only-password-12345'})
         self.assertEqual(response.status_code, 429)
         self.assertEqual(response.headers['Retry-After'], '900')
 

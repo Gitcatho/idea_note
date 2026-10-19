@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from store import Store, validate
+from store import Store, validate, RESUME_FIELDS
 from desktop import Bridge
 from seeds import initialize
 
@@ -42,5 +42,24 @@ class StoreTests(unittest.TestCase):
   initialize(self.store);initialize(self.store);self.assertEqual(len(self.store.list()),4);self.assertTrue(any(r['schedules'] for r in self.store.list()))
  def test_empty_title_no_row(self):
   self.assertFalse(Bridge(self.store).dispatch('save',dict(kind='job',title=''))['ok'])
+ def test_resume_fields_edit_backup_restore(self):
+  fields={key:'합성 이력서 정보 '+key for key in RESUME_FIELDS}
+  id_=self.store.save(self.record('memo',notes='기존 자유 메모',**fields))
+  row=self.store.list()[0];row['title']='편집';self.store.save(row)
+  self.assertEqual(self.store.list()[0]['notes'],'기존 자유 메모')
+  data=json.loads(Path(self.store.backup()).read_text())
+  restored=Store(Path(self.temp.name)/'restored');self.assertEqual(restored.merge(data),1)
+  actual=Store(restored.root).list()[0]
+  for key,value in fields.items():self.assertEqual(actual[key],value)
+  self.assertEqual(actual['id'],id_);self.assertEqual(restored.merge(data),0)
+ def test_resume_fields_validation_and_legacy(self):
+  self.assertEqual(validate(self.record('memo',memoType='resume'))['memoType'],'resume')
+  with self.assertRaises(ValueError):validate(self.record('memo',memoType='invalid'))
+  legacy=self.record('memo',notes='일반 메모');self.store.save(legacy)
+  self.assertEqual(self.store.list()[0]['notes'],'일반 메모')
+  for key,limit in RESUME_FIELDS.items():
+   for invalid in ([],None,'x'*(limit+1)):
+    with self.assertRaises(ValueError):validate(self.record('memo',**{key:invalid}))
+  self.assertNotIn('resumeEducation',validate(self.record('job',resumeEducation='다른 탭')))
 
 if __name__=='__main__':unittest.main()

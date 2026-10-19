@@ -15,3 +15,9 @@ docs/my-pm-reference/
 # Local QA screenshots and machine-specific execution reports
 docs/*.png
 docs/*.json
+
+# Private resume drafting notes (keep the local original)
+/이력서_작성내용.md
+
+# Local runtime symlink used for isolated tests
+.venv-web

@@ -54,8 +54,8 @@ checks=[]
 for action in ('list','save','trash','restore','export','import','backup','session'):
     assert call('/api/'+action,{})[0] == 401, action
 checks.append('all anonymous data APIs blocked')
-assert call('/login',{'password':'incorrect'})[0] == 401
-status,headers,body=call('/login',{'password':password})
+assert call('/login',{'username':'admin','password':'incorrect'})[0] == 401
+status,headers,body=call('/login',{'username':'admin','password':password})
 assert status == 200
 cookie=headers['Set-Cookie'].split(';',1)[0]
 assert all(flag in headers['Set-Cookie'] for flag in ('Secure','HttpOnly','SameSite=Strict'))
