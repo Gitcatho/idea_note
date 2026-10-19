@@ -14,7 +14,7 @@ let browser;
  const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
  await page.goto(origin);assert(page.url().endsWith('/login'));
- await page.locator('#password').fill(password);await page.locator('#login button').click();await page.waitForURL(origin+'/');
+ await page.locator('#username').fill('admin');await page.locator('#password').fill(password);await page.locator('#login button').click();await page.waitForURL(origin+'/');
  await page.waitForFunction(()=>document.querySelector('#dataRoot').textContent.includes('개인 서버'));
  const checks=['public relay TLS and mobile login'];
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

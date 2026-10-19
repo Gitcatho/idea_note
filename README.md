@@ -1,6 +1,13 @@
 # News_idea
 
-로그인 웹앱을 라즈베리파이에 배포하고 [공개 HTTPS](https://pi-home.tail5eceb8.ts.net:8443/)를 검증했습니다. 개인 관리자 로그인, 모바일 화면, 인증된 데이터·백업 API를 제공합니다. 관리자 비밀번호를 사용자가 직접 설정하기 전에는 모든 로그인이 차단됩니다. 기존 데이터는 자동 이전하지 않습니다. 웹 실행·비밀번호 설정·백업·배포 및 복구 절차는 [docs/WEB_DEPLOYMENT.md](docs/WEB_DEPLOYMENT.md)를 확인하세요. 아래 macOS 앱 사용법은 기존 앱에 대한 설명입니다.
+이슈 [#4](https://github.com/Gitcatho/idea_note/issues/4)의 아이디·비밀번호 로그인과 회원가입을 구현했습니다. 사용자 승인 후 2026-10-19 운영 배포 및 HTTPS 회원가입/로그인·데이터 분리 검증을 완료했습니다. 개발 위치는 `feat/4-member-accounts` 격리 브랜치이며 기존 세부 이력 구현을 보존합니다. 현재 운영 사이트에서 새 로그인·회원가입 화면을 제공합니다.
+
+새 웹 버전은 기존 계정을 **admin + 현재 비밀번호**로 유지하고 새 회원별로 독립된 기록·백업을 라즈베리파이에 저장합니다. 각 계정은 본인 데이터만 조회·편집·삭제 복구·내보내기·가져오기·백업할 수 있습니다. admin도 웹에서 다른 회원 데이터를 볼 수 없습니다. 서버 운영 권한으로 파일을 읽는 것은 별도이며, SQLite/JSON 파일은 디스크에서 암호화되지 않습니다.
+
+아이디는 영문·숫자·밑줄3~32자, 대소문자 구분 없음. 비밀번호는10~1024자이며 scrypt 해시로 저장합니다. 회원가입 후 로그인하며 공개 가입은 전체10회/시간·최대100계정으로 제한합니다. 로그인은 계정별5회/15분·전체30회/15분 제한을 사용하며 재시작해도 유지됩니다. 이메일 인증·비밀번호 찾기·회원 탈퇴는 이번 범위에 없습니다. 새 의존성은 추가하지 않았습니다.
+
+
+로그인 웹앱을 라즈베리파이에 배포하고 [공개 HTTPS](https://pi-home.tail5eceb8.ts.net:8443/)를 검증했습니다. 배포된 구버전은 개인 관리자 로그인, 모바일 화면, 인증된 데이터·백업 API를 제공합니다. 기존 관리자 비밀번호는 사용자가 직접 설정한 값을 유지합니다. 기존 데이터는 자동 이전하지 않습니다. 웹 실행·비밀번호 설정·백업·배포 및 복구 절차는 [docs/WEB_DEPLOYMENT.md](docs/WEB_DEPLOYMENT.md)를 확인하세요. 아래 macOS 앱 사용법은 기존 앱에 대한 설명입니다.
 
 AI/AX 채용과 지원 기업, 이력서 메모, 공모전, 학습기록을 위한 한국어 macOS 로컬 앱입니다.
 
@@ -45,6 +52,7 @@ PYTHONPATH=. .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python desktop.py
 .venv/bin/python build.py
 node --check static/app.js
+node --check static/login.js
 ```
 
 브라우저 UI 테스트는 `PLAYWRIGHT_MODULE`을 설치한 Playwright 모듈 경로로 설정 후 `node tests/browser-tests.cjs` 실행. 앱 실행/네이티브 QA는 Mac 로그인 데스크톱에서 실행해야 합니다.
@@ -58,3 +66,5 @@ dist/News_idea.app/Contents/MacOS/News_idea --data-root /tmp/news-idea-qa --smok
 저장소는 [Gitcatho/idea_note](https://github.com/Gitcatho/idea_note), 기본 브랜치는 `main`입니다. 공식 작업은 GitHub Issues, 요약은 LIST.md로 관리합니다. 이후 개발은 이슈별 브랜치와 PR로 진행합니다. 기능 이력과 검증 결과는 CHANGELOG 및 docs/QA.md에 기록합니다. 서버 배포·공개 설정 변경은 소스 push와 별도 작업입니다.
 
 로컬 `AGENTS.md`와 AI 지침·설정·참고 사본은 Git에서 제외합니다. 개인 SQLite DB·JSON 백업·비밀 설정·가상환경·앱/DMG 빌드 산출물·환경별 QA 이미지/실행 결과도 저장소에 포함하지 않습니다. Git clone에는 실행파일과 개인 데이터가 없으므로 실행 환경과 비밀번호를 별도로 설정해야 합니다. 기존 My_PM 원본과 개인 데이터는 변경하지 않습니다.
+
+회원가입 UI 추가 검증: `PLAYWRIGHT_MODULE=/path/to/playwright node tests/member-browser-tests.cjs`. 기존 웹 브라우저 테스트와 같은 로컬4311을 사용하므로 두 브라우저 스크립트를 동시에 실행하지 마세요.

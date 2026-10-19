@@ -5,6 +5,7 @@ const webReady=(async()=>{
  const response=await fetch('/api/session');
  if(response.status===401){location.replace('/login');throw Error('로그인이 필요합니다.');}
  const result=await response.json();webCSRF=result.data.csrf;
+ const identity=document.getElementById('memberIdentity');if(identity)identity.textContent=result.data.username+' 님의 개인 공간';
 })();
 window.pywebview={api:{dispatch:async(action,payload={})=>{
  await webReady;
