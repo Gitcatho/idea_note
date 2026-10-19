@@ -15,6 +15,7 @@ from flask import Flask, Response, g, jsonify, redirect, request
 from desktop import SOURCES
 from store import Store, KINDS
 from accounts import Auth
+from skill_llm import SkillLLM, LLMError, configured
 
 ROOT = Path(__file__).resolve().parent
 COOKIE = 'news_session'
@@ -33,6 +34,8 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
     store = Store(data_root)
     auth = Auth(data_root)
     app.extensions.update(store=store, auth=auth)
+    skill_llm=SkillLLM(auth)
+    app.extensions['skill_llm']=skill_llm
     secure = parsed.scheme == 'https'
     def member_store(user_id):
         return store if user_id == 1 else Store(Path(data_root)/'users'/str(user_id))
@@ -143,13 +146,13 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
         html = html.replace('<script>/*APP_JS*/</script>', '<script src="/assets/web.js"></script><script src="/assets/app.js"></script>')
         html = html.replace('로컬 전용 워크스페이스', '개인 웹 워크스페이스').replace('개인 메모는 이 Mac에 저장됩니다.', '<span id="memberIdentity">로그인한 회원의 개인 공간입니다.</span>')
         html = html.replace('<button id="trashTab">', '<button id="logout">로그아웃</button><button id="trashTab">')
-        html = html.replace('<script src="/assets/app.js"></script>', '<script src="/assets/app.js"></script><script src="/assets/members.js"></script>')
+        html = html.replace('<script src="/assets/app.js"></script>', '<script src="/assets/app.js"></script><script src="/assets/members.js"></script><script src="/assets/skill-llm.js"></script>')
         html = html.replace('하나의 로컬 공간', '개인 서버').replace('앱 시작 시', '서버 시작 시')
         return Response(html, mimetype='text/html')
 
     @app.get('/assets/<name>')
     def asset(name):
-        if name not in ('app.js', 'app.css', 'web.js', 'resume.js', 'members.js'):
+        if name not in ('app.js', 'app.css', 'web.js', 'resume.js', 'members.js', 'skill-llm.js'):
             return '', 404
         return Response((ROOT/'static'/name).read_text(), mimetype='text/css' if name.endswith('.css') else 'text/javascript')
 
@@ -174,7 +177,10 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
         if not isinstance(payload, dict):
             return jsonify(ok=False, error='JSON 객체가 필요합니다.'), 400
         try:
-            if action in ('members','member_access'):
+            if action in ('llm_status','llm_draft'):
+                check_kind('skill')
+                data={'configured':configured()} if action=='llm_status' else skill_llm.draft(g.user_id,payload)
+            elif action in ('members','member_access'):
                 if g.user_id != 1:
                     raise PermissionError('관리자만 회원 권한을 관리할 수 있습니다.')
                 data=auth.members(g.user_id) if action=='members' else auth.set_access(g.user_id,payload.get('userId'),payload.get('approved'),payload.get('tabs'))
@@ -209,6 +215,8 @@ def create_app(data_root, origin='http://127.0.0.1:4310', testing=False):
             else:
                 return jsonify(ok=False, error='지원하지 않는 동작입니다.'), 404
             return jsonify(ok=True, data=data)
+        except LLMError as e:
+            return jsonify(ok=False,error=str(e)), e.status
         except PermissionError as e:
             return jsonify(ok=False,error=str(e)), 403
         except ValueError as e:

@@ -7,6 +7,7 @@
 - 사용자 요청에 따라 관리자 비밀번호 최소 길이를10자로 변경. 실제 비밀번호는 계속 터미널 숨김 입력으로 설정.
 ### 추가
 - 관리자 승인과 탭별 서버 권한 검사, 기존 데이터·세션 행 보존. 사용자 승인 배포·검증 완료, 원래 비밀번호·기록·세션 보존. [#8](https://github.com/Gitcatho/idea_note/issues/8).
+- 동의 기반 Instagram/Threads 메타설명·붙여넣은 본문 LLM 스킬 초안, 검토 후 저장, 요청 제한·서버 비밀 설정. 사용자 승인 배포, 합성 본문 실제 생성 검증. [#7](https://github.com/Gitcatho/idea_note/issues/7).
 - 아이디·비밀번호 로그인과 회원가입, 회원별 기록·백업·API 접근 분리. 기존 admin 비밀번호·기록·유효 세션 보존 전환 지원. 사용자 승인으로 ARM64 운영 배포·HTTPS 검증 완료, 기존 소유자 데이터·비밀번호·세션과 다른 서비스 보존. [#4](https://github.com/Gitcatho/idea_note/issues/4).
 - 이력 등록을 이름·주소·병역·학력·학점·상위 과목 3개와 반복 가능한 자격증·경력·수상·대외활동 입력칸으로 구분. 달력 입력·기간 계산·항목별 요약 카드 제공, 기존 이력 메모 보존과 검색·입력 검증·JSON 백업/가져오기 지원. [#2](https://github.com/Gitcatho/idea_note/issues/2).
 - .gitignore만 첫 커밋으로 등록하고 기존 소스를 별도 커밋으로 GitHub에 등록. 개인 데이터·백업·비밀값·AI 지침·빌드/QA 산출물 제외. [#1](https://github.com/Gitcatho/idea_note/issues/1).

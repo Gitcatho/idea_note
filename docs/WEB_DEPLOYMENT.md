@@ -1,3 +1,15 @@
+## 최신 승인·탭 권한·LLM 배포 (2026-10-19 21:42 KST)
+
+사용자 승인으로 News_idea만 교체했습니다. 사전 데이터/인증 DB 백업과 이전 이미지 `news-idea-web:before-approval-llm`, 이전 소스 `approval-llm-rollout-20261019/source-before.tar.gz`를 보존합니다. 인증 백업은 같은 rollout의 `database-snapshot/database-backup/auth.sqlite3`입니다. 비밀번호와 원래 기록·세션 값 동일, 다른서비스·443/8443 보존, ARM64 33개·실제HTTPS 10개·실제LLM 합성본문 생성 확인. 자세한 결과는 QA.md 및 키 설정은 LLM_SETUP.md 참조.
+
+현재 LLM 설정을 유지하는 명령은 아래와 같습니다. 모델 기본값은 gpt-5.6-terra이며 키는 /data/.secrets/openai_api_key 사용자 직접 입력 파일입니다. 키를 .env에 넣지 않습니다.
+
+```sh
+docker compose -p news-idea -f compose.web.yml -f compose.llm.yml up -d --no-deps --no-build web
+```
+
+복구는 News_idea만 대상으로 합니다. 현재 DB와 배포 후 회원 데이터를 먼저 보존한 뒤 앱을 중지하고 사전 인증 DB·이전 이미지·이전 소스/Compose를 함께 복원합니다. 기존 기록 DB는 임의로 덮어쓰지 않습니다. 이전 버전으로 돌아가면 회원 승인/탭 제한 기능이 없어지므로 복구 동안 공개 접근을 별도로 점검해야 합니다. DB 사본 복원은 현재 새 계정·세션·권한을 잃을 수 있어 별도 승인 후 진행합니다. 실제 복구는 실행하지 않았습니다.
+
 # 로그인 웹앱: 실행과 운영
 
 매일 백업의 실제 실행 주기, 재부팅 자동 시작 점검 결과와 백업 실패·디스크 부족 확인 절차는 [OPERATIONS.md](OPERATIONS.md)를 참고하세요.
